@@ -1,0 +1,175 @@
+//
+//  ViewController.m
+//  netrunnerapp
+//
+//  Created by Paul Clark on 7/27/15.
+//  Copyright (c) 2015 Paul Clark. All rights reserved.
+//
+
+#import "ViewController.h"
+
+@interface CardView : UIView
+@property (nonatomic, strong) UILabel* accessOrderLabel;
+@end
+
+@implementation CardView
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.accessOrderLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
+        self.accessOrderLabel.textAlignment = NSTextAlignmentCenter;
+        self.accessOrderLabel.font = [UIFont systemFontOfSize:35];
+        [self addSubview:self.accessOrderLabel];
+        self.layer.borderColor = [UIColor redColor].CGColor;
+        self.layer.borderWidth = 1.f;
+        self.layer.cornerRadius = 5;
+    }
+    return self;
+}
+@end
+
+@interface ViewController ()
+@property (weak, nonatomic) IBOutlet UISlider *handSizeSlider;
+@property (weak, nonatomic) IBOutlet UILabel *handSizeLabel;
+@property (weak, nonatomic) IBOutlet UIButton *clearButton;
+@property (weak, nonatomic) IBOutlet UIButton *accessButton;
+@property (weak, nonatomic) IBOutlet UIView *cardContainerView;
+@property (nonatomic) NSUInteger currentHandSize;
+
+@property (nonatomic) NSMutableOrderedSet* cardAccessOrder;
+@property (nonatomic) NSMutableArray* cardViews;
+@end
+
+@implementation ViewController
+
+- (instancetype)initWithCoder:(NSCoder *)coder
+{
+    self = [super initWithCoder:coder];
+    if (self) {
+        self.cardAccessOrder = [[NSMutableOrderedSet alloc] init];
+        self.cardViews = [[NSMutableArray alloc] init];
+    }
+    return self;
+}
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    // Do any additional setup after loading the view, typically from a nib.
+    self.currentHandSize = 5;
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [self resetAccessedCardInformation];
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+-(void)setCurrentHandSize:(NSUInteger)currentHandSize
+{
+    _currentHandSize = currentHandSize;
+    
+    //Reset Card amount
+    self.handSizeLabel.text = [@(currentHandSize) stringValue];
+    [self resetAccessedCardInformation];
+}
+
+-(void)resetAccessedCardInformation
+{
+    for (CardView* cardView in self.cardViews) {
+        [cardView removeFromSuperview];
+    }
+    [self.cardViews removeAllObjects];
+    [self.cardAccessOrder removeAllObjects];
+    [self displayNumberOfCards:self.currentHandSize];
+}
+
+-(void)displayNumberOfCards:(NSUInteger)numberOfCards
+{
+    NSUInteger leftMargin = 10;
+    NSUInteger xIndex = leftMargin;
+    NSUInteger yIndex = 10;
+    NSUInteger cardWidth = 100;
+    NSUInteger cardHeight = self.cardContainerView.bounds.size.height-40;
+    
+    for (int cardIndex = 0; cardIndex < numberOfCards; cardIndex++) {
+        CardView* cardView = [[CardView alloc] initWithFrame:CGRectMake(xIndex, yIndex, cardWidth, cardHeight)];
+        [self.cardContainerView addSubview:cardView];
+        [self.cardViews addObject:cardView];
+        xIndex += cardWidth + leftMargin;
+    }
+}
+
+-(void)redrawAccessInformOnCards
+{
+    NSArray* accessOrderArray = [self.cardAccessOrder array];
+    
+    NSUInteger accessCount = 1;
+    for (NSNumber* accessIndex in accessOrderArray) {
+        CardView* cardView = [self.cardViews objectAtIndex:[accessIndex unsignedIntegerValue]];
+        cardView.accessOrderLabel.text = [@(accessCount) stringValue];
+        accessCount+=1;
+    }
+}
+
+-(void)performAnotherAccess
+{
+    
+    NSUInteger nextAccessIndex = [self randomNumberBetween:0 andNumber:self.currentHandSize notWithinSet:[self.cardAccessOrder set]];
+    if(nextAccessIndex != NSNotFound) {
+        [self.cardAccessOrder addObject:@(nextAccessIndex)];
+    }
+    [self redrawAccessInformOnCards];
+}
+
+- (IBAction)onClearButtonPressed:(id)sender
+{
+    [self resetAccessedCardInformation];
+}
+
+- (IBAction)onAccessButtonPressed:(id)sender
+{
+    [self performAnotherAccess];
+}
+
+- (IBAction)onHandSizeSliderValueChanged:(id)sender
+{
+    float sliderValue = self.handSizeSlider.value;
+    
+    NSInteger wholeSliderValue = floorf(sliderValue);
+    
+    if(self.currentHandSize != wholeSliderValue) {
+        self.currentHandSize = wholeSliderValue;
+    }
+}
+
+-(NSUInteger)randomNumberBetween:(NSUInteger)firstNumber andNumber:(NSUInteger)secondNumber notWithinSet:(NSSet*)exclusionSet
+{
+    NSParameterAssert(secondNumber > firstNumber);
+    if(secondNumber - firstNumber == [exclusionSet count]) {
+        return NSNotFound;
+    }
+    
+    NSUInteger randomNumber = [self randomNumberBetween:firstNumber andNumber:secondNumber];
+    
+    while([exclusionSet containsObject:@(randomNumber)]) {
+        randomNumber = [self randomNumberBetween:firstNumber andNumber:secondNumber];
+    }
+    return randomNumber;
+}
+
+
+-(NSUInteger)randomNumberBetween:(NSUInteger)firstNumber andNumber:(NSUInteger)secondNumber
+{
+    NSParameterAssert(secondNumber > firstNumber);
+    NSUInteger numberDifference = secondNumber-firstNumber;
+    return arc4random_uniform((unsigned)numberDifference)+firstNumber;
+}
+
+@end
