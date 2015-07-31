@@ -2,7 +2,7 @@
 # platform :ios, '6.0'
 
 target 'netrunnerapp' do
-
+pod 'PureLayout'
 end
 
 target 'netrunnerappTests' do

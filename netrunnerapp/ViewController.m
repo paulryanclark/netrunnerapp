@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+#import <PureLayout.h>
 
 @interface CardView : UIView
 @property (nonatomic, strong) UILabel* accessOrderLabel;
@@ -18,11 +19,12 @@
 {
     self = [super initWithFrame:frame];
     if (self) {
-        self.accessOrderLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
+        self.accessOrderLabel = [[UILabel alloc] init];
         self.accessOrderLabel.textAlignment = NSTextAlignmentCenter;
         self.accessOrderLabel.font = [UIFont systemFontOfSize:35];
         [self addSubview:self.accessOrderLabel];
-        self.layer.borderColor = [UIColor redColor].CGColor;
+        [self.accessOrderLabel autoCenterInSuperview];
+        self.layer.borderColor = [UIColor blackColor].CGColor;
         self.layer.borderWidth = 1.f;
         self.layer.cornerRadius = 5;
     }
@@ -31,7 +33,8 @@
 @end
 
 @interface ViewController ()
-@property (weak, nonatomic) IBOutlet UISlider *handSizeSlider;
+@property (weak, nonatomic) IBOutlet UIButton *handSizeIncrementerButton;
+@property (weak, nonatomic) IBOutlet UIButton *handSizeDecrementerButton;
 @property (weak, nonatomic) IBOutlet UILabel *handSizeLabel;
 @property (weak, nonatomic) IBOutlet UIButton *clearButton;
 @property (weak, nonatomic) IBOutlet UIButton *accessButton;
@@ -96,13 +99,31 @@
     NSUInteger xIndex = leftMargin;
     NSUInteger yIndex = 10;
     NSUInteger cardWidth = 100;
-    NSUInteger cardHeight = self.cardContainerView.bounds.size.height-40;
+    NSUInteger cardHeight = 150;
+    
+    CardView* previousCardView;
     
     for (int cardIndex = 0; cardIndex < numberOfCards; cardIndex++) {
-        CardView* cardView = [[CardView alloc] initWithFrame:CGRectMake(xIndex, yIndex, cardWidth, cardHeight)];
+        CardView* cardView = [[CardView alloc] init];
+        [cardView autoSetDimensionsToSize:CGSizeMake(cardWidth, cardHeight)];
+        
         [self.cardContainerView addSubview:cardView];
         [self.cardViews addObject:cardView];
-        xIndex += cardWidth + leftMargin;
+        
+        [cardView autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:10];
+        [cardView autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:10];
+        
+        if(cardIndex == 0) {
+            [cardView autoPinEdgeToSuperviewEdge:ALEdgeLeft withInset:10];
+        } else if(cardIndex == numberOfCards -1) {
+            [cardView autoPinEdgeToSuperviewEdge:ALEdgeRight withInset:10];
+        }
+        
+        if(previousCardView) {
+            [cardView autoPinEdge:ALEdgeLeft toEdge:ALEdgeRight ofView:previousCardView withOffset:10];
+        }
+        
+        previousCardView = cardView;
     }
 }
 
@@ -138,15 +159,16 @@
     [self performAnotherAccess];
 }
 
-- (IBAction)onHandSizeSliderValueChanged:(id)sender
+- (IBAction)onHandSizeIncrementerButtonPressed:(id)sender
 {
-    float sliderValue = self.handSizeSlider.value;
-    
-    NSInteger wholeSliderValue = floorf(sliderValue);
-    
-    if(self.currentHandSize != wholeSliderValue) {
-        self.currentHandSize = wholeSliderValue;
-    }
+    self.currentHandSize += 1;
+    self.handSizeDecrementerButton.enabled = self.currentHandSize > 1;
+}
+
+- (IBAction)onHandSizeDecrementerButtonPressed:(id)sender
+{
+    self.currentHandSize -= 1;
+    self.handSizeDecrementerButton.enabled = self.currentHandSize > 1;
 }
 
 -(NSUInteger)randomNumberBetween:(NSUInteger)firstNumber andNumber:(NSUInteger)secondNumber notWithinSet:(NSSet*)exclusionSet
